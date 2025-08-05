@@ -1,3 +1,38 @@
+#' Functional Bootstrap
+#' 
+#' Performs bootstrap resampling for functional data.
+#' 
+#' @param data A functional time series object of class \code{fts}.
+#' @param estad Function to compute the statistic of interest (default: func.mean).
+#' @param alpha Significance level for confidence intervals (default: 0.05).
+#' @param nb Number of bootstrap replications (default: 200).
+#' @param suav Smoothing parameter (default: 0.0).
+#' @param media.dist Logical. If TRUE, use mean distance (default: FALSE).
+#' @param graph Logical. If TRUE, produce graphical output (default: FALSE).
+#' @param ... Additional arguments passed to the statistic function.
+#' 
+#' @return A list containing:
+#' \item{estimate}{Original estimate}
+#' \item{max.dist}{Maximum distance for confidence interval}
+#' \item{rep.dist}{Bootstrap distances}
+#' \item{resamples}{Bootstrap resamples}
+#' \item{center}{Center of bootstrap distribution}
+#' 
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(pm_10_GR)
+#' 
+#' # Perform functional bootstrap
+#' boot_result <- fbootstrap(pm_10_GR, estad = func.mean, nb = 100)
+#' 
+#' # Plot results
+#' plot(boot_result$estimate, type = "l", col = "red", lwd = 2)
+#' }
+#' 
+#' @seealso \code{\link{func.mean}}, \code{\link{ftsm}}
+#' 
+#' @export
 fbootstrap <- function(data, estad = func.mean, alpha = 0.05, nb = 200, suav = 0.0, media.dist = FALSE,
                        graph = FALSE, ...)
 {

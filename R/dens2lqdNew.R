@@ -15,8 +15,7 @@
 #' @references
 #' \cite{Functional Data Analysis for Density Functions by Transformation to a Hilbert space, Alexander Petersen and Hans-Georg Mueller, 2016}
 #' @export
-
-dens2lqd = function(dens, dSup, lqdSup = seq(0, 1, length.out = length(dSup)), t0 = dSup[1], verbose = TRUE){
+dens2lqd <- function(dens, dSup, lqdSup = seq(0, 1, length.out = length(dSup)), t0 = dSup[1], verbose = TRUE){
 
   # Check density requirements
   if(any(dens < 0)){

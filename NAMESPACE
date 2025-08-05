@@ -1,4 +1,5 @@
 export(
+dens2lqd,
 is.fts,
 extract,
 ftsm,
@@ -50,7 +51,7 @@ MFPCA,
 skew_t_fun,
 Horta_Ziegelmann_FPCA,
 CoDa_FPCA,
-LQDT_FPCA,
+#LQDT_FPCA,
 CoDa_BayesNW,
 GAEVforecast
 )

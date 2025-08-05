@@ -1,3 +1,41 @@
+#' Dynamic Update for Functional Time Series Forecasting
+#' 
+#' Performs dynamic updating of functional time series forecasts using various methods.
+#' 
+#' @param data A functional time series object of class \code{fts}.
+#' @param newdata New observations to incorporate in the forecast.
+#' @param holdoutdata Holdout data for validation.
+#' @param method Update method: "ts", "block", "ols", "pls", or "ridge".
+#' @param fmethod Forecasting method: "arima", "ar", "ets", "ets.na", "rwdrift", or "rw".
+#' @param pcdmethod Functional PCA method: "classical", "M", or "rapca".
+#' @param ngrid Number of grid points for smoothing (default: max(1000, ncol(data$y))).
+#' @param order Number of principal components (default: 6).
+#' @param robust_lambda Robustness parameter (default: 2.33).
+#' @param lambda Ridge regression parameter (default: 0.01).
+#' @param value Logical. If TRUE, return forecast values (default: FALSE).
+#' @param interval Logical. If TRUE, compute prediction intervals (default: FALSE).
+#' @param level Confidence level for prediction intervals (default: 80).
+#' @param pimethod Method for prediction intervals: "parametric" or "nonparametric".
+#' @param B Number of bootstrap replications (default: 1000).
+#' 
+#' @return If value=TRUE, returns forecast values. Otherwise, returns a list with error measures:
+#' \item{errormse}{Mean squared error}
+#' \item{errormae}{Mean absolute error}
+#' \item{errormape}{Mean absolute percentage error}
+#' 
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(pm_10_GR)
+#' 
+#' # Perform dynamic update
+#' result <- dynupdate(pm_10_GR, newdata = pm_10_GR$y[,1:10], 
+#'                     holdoutdata = pm_10_GR$y[,11:12], method = "pls")
+#' }
+#' 
+#' @seealso \code{\link{ftsm}}, \code{\link{forecast.ftsm}}
+#' 
+#' @export
 dynupdate <- function (data, newdata = NULL, holdoutdata, method = c("ts", 
     "block", "ols", "pls", "ridge"), fmethod = c("arima", "ar", 
     "ets", "ets.na", "rwdrift", "rw"), pcdmethod = c("classical", 

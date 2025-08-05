@@ -1,3 +1,56 @@
+#' Functional Partial Least Squares Regression
+#' 
+#' Performs functional partial least squares regression for functional time series.
+#' 
+#' @param data A functional time series object of class \code{fts}.
+#' @param order Number of components to include in the model (default: 6).
+#' @param type Type of PLS algorithm: "simpls" (default) or "nipals".
+#' @param unit.weights Logical. If TRUE, use unit weights (default: TRUE).
+#' @param weight Logical. If TRUE, use weighted PLS (default: FALSE).
+#' @param beta Weight parameter for exponential weighting (default: 0.1).
+#' @param interval Logical. If TRUE, compute prediction intervals (default: FALSE).
+#' @param method Method for prediction intervals: "delta" (default) or "boota".
+#' @param alpha Significance level for prediction intervals (default: 0.05).
+#' @param B Number of bootstrap replications (default: 100).
+#' @param adjust Logical. If TRUE, adjust for bias (default: FALSE).
+#' @param backh Number of steps back for validation (default: 10).
+#' 
+#' @return An object of class \code{fm} containing:
+#' \item{x1}{Time points}
+#' \item{y1}{Grid points}
+#' \item{ypred}{Predicted functional time series}
+#' \item{y}{Original functional time series}
+#' \item{Ypred}{Predicted values}
+#' \item{B}{Regression coefficients}
+#' \item{P}{X loadings}
+#' \item{Q}{Y loadings}
+#' \item{T}{X scores}
+#' \item{R}{Weights}
+#' \item{fitted}{Fitted values}
+#' \item{residuals}{Residuals}
+#' \item{meanX}{Mean of X}
+#' \item{meanY}{Mean of Y}
+#' \item{call}{Function call}
+#' 
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(pm_10_GR)
+#' 
+#' # Fit functional PLS regression
+#' fit <- fplsr(pm_10_GR, order = 3)
+#' 
+#' # Plot results
+#' plot(fit)
+#' }
+#' 
+#' @seealso \code{\link{forecastfplsr}}, \code{\link{plotfplsr}}
+#' 
+#' @references
+#' Hyndman, R.J., & Shang, H.L. (2009). Forecasting functional time series.
+#' Journal of the Korean Statistical Society, 38(3), 199-221.
+#' 
+#' @export
 fplsr <- function (data, order = 6, type = c("simpls", "nipals"), unit.weights = TRUE, 
     weight = FALSE, beta = 0.1, interval = FALSE, method = c("delta", 
         "boota"), alpha = 0.05, B = 100, adjust = FALSE, backh = 10) 

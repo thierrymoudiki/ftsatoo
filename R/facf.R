@@ -1,3 +1,32 @@
+#' Functional Autocorrelation Function
+#' 
+#' Computes the functional autocorrelation function for a functional time series.
+#' 
+#' @param fun_data A matrix or data frame containing functional time series data.
+#' @param lag_value_range Vector of lag values to compute autocorrelation for (default: seq(0, 20, by = 1)).
+#' 
+#' @return A vector of autocorrelation values corresponding to the lag values.
+#' 
+#' @details
+#' The functional autocorrelation function measures the correlation between 
+#' functional observations at different time lags. For lag 0, the value is set to NA.
+#' 
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(pm_10_GR)
+#' 
+#' # Compute functional autocorrelation
+#' acf_values <- facf(pm_10_GR$y)
+#' 
+#' # Plot autocorrelation function
+#' plot(seq(0, 20, by = 1), acf_values, type = "l", 
+#'      xlab = "Lag", ylab = "Autocorrelation")
+#' }
+#' 
+#' @seealso \code{\link{ftsm}}, \code{\link{forecast.ftsm}}
+#' 
+#' @export
 facf <-
 function(fun_data, lag_value_range = seq(0, 20, by = 1))
 {

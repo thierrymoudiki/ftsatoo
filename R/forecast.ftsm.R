@@ -1,3 +1,53 @@
+#' Forecast Functional Time Series Model
+#' 
+#' Forecasts a functional time series model using various univariate time series methods.
+#' 
+#' @param object An object of class \code{ftsm} returned by \code{ftsm()}.
+#' @param h Forecast horizon (number of periods to forecast).
+#' @param method Forecasting method: "ets" (default), "arima", "ar", "ets.na", "rwdrift", "rw", "struct", or "arfima".
+#' @param level Confidence level for prediction intervals (default: 80).
+#' @param jumpchoice Method for handling the jump-off point: "fit" (default) or "actual".
+#' @param pimethod Method for prediction intervals: "parametric" (default) or "nonparametric".
+#' @param B Number of bootstrap replications for nonparametric prediction intervals (default: 100).
+#' @param usedata Number of observations to use for fitting (default: all available).
+#' @param adjust Logical. If TRUE, adjust forecasts for bias (default: TRUE).
+#' @param model ETS model specification (optional).
+#' @param damped Logical. If TRUE, use damped trend (optional).
+#' @param stationary Logical. If TRUE, force stationarity (default: FALSE).
+#' @param ... Additional arguments passed to the forecasting method.
+#' 
+#' @return An object of class \code{ftsf} containing:
+#' \item{method}{Forecasting method used}
+#' \item{x}{Time points}
+#' \item{y}{Original functional time series}
+#' \item{fitted}{Fitted values}
+#' \item{residuals}{Residuals}
+#' \item{mean}{Point forecasts}
+#' \item{lower}{Lower prediction intervals}
+#' \item{upper}{Upper prediction intervals}
+#' \item{level}{Confidence level}
+#' \item{xname}{Name of x variable}
+#' \item{yname}{Name of y variable}
+#' 
+#' @examples
+#' \dontrun{
+#' # Fit functional time series model
+#' fit <- ftsm(pm_10_GR, order = 3)
+#' 
+#' # Forecast 12 periods ahead
+#' fc <- forecast(fit, h = 12, method = "ets")
+#' 
+#' # Plot forecasts
+#' plot(fc)
+#' }
+#' 
+#' @seealso \code{\link{ftsm}}, \code{\link{plot.ftsf}}
+#' 
+#' @references
+#' Hyndman, R.J., & Shang, H.L. (2009). Forecasting functional time series.
+#' Journal of the Korean Statistical Society, 38(3), 199-221.
+#' 
+#' @export
 forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets.na",
     "rwdrift", "rw", "struct", "arfima"), level = 80, jumpchoice = c("fit", "actual"), 
     pimethod = c("parametric", "nonparametric"), B = 100, usedata = nrow(object$coeff), 

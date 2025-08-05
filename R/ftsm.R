@@ -1,3 +1,57 @@
+#' Functional Time Series Model
+#' 
+#' Fits a functional time series model using functional principal component analysis.
+#' 
+#' @param y A functional time series object of class \code{fts}.
+#' @param order Number of principal components to include in the model (default: 6).
+#' @param ngrid Number of grid points for smoothing (default: max(500, ncol(y$y))).
+#' @param method Method for functional principal component analysis: "classical" (default), "M", or "rapca".
+#' @param mean Logical. If TRUE, include mean function in the model (default: TRUE).
+#' @param level Logical. If TRUE, include level component in the model (default: FALSE).
+#' @param lambda Smoothing parameter for penalized splines (default: 3).
+#' @param weight Logical. If TRUE, use weighted functional principal component analysis (default: FALSE).
+#' @param beta Weight parameter for exponential weighting (default: 0.1).
+#' @param ... Additional arguments passed to the functional PCA function.
+#' 
+#' @return An object of class \code{ftsm} containing:
+#' \item{x1}{Time points}
+#' \item{y1}{Grid points}
+#' \item{y}{Original functional time series}
+#' \item{basis}{Basis functions (eigenfunctions)}
+#' \item{coeff}{Coefficients (scores)}
+#' \item{fitted}{Fitted values}
+#' \item{residuals}{Residuals}
+#' \item{varprop}{Proportion of variance explained by each component}
+#' \item{eigen_values}{Eigenvalues}
+#' \item{wt}{Weights}
+#' \item{v}{Eigenvalues}
+#' \item{basis2}{Second set of basis functions}
+#' \item{coeff2}{Second set of coefficients}
+#' \item{mean.se}{Standard error of the mean function}
+#' \item{call}{Function call}
+#' 
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(pm_10_GR)
+#' 
+#' # Fit functional time series model
+#' fit <- ftsm(pm_10_GR, order = 3)
+#' 
+#' # Plot the model
+#' plot(fit)
+#' 
+#' # Forecast
+#' forecast(fit, h = 12)
+#' }
+#' 
+#' @seealso \code{\link{forecast.ftsm}}, \code{\link{plot.ftsm}}, \code{\link{summary.fm}}
+#' 
+#' @references
+#' Hyndman, R.J., & Shang, H.L. (2009). Forecasting functional time series.
+#' Journal of the Korean Statistical Society, 38(3), 199-221.
+#' 
+#' @export
 ftsm <- function (y, order = 6, ngrid = max(500, ncol(y$y)), method = c("classical",
 "M", "rapca"), mean = TRUE, level = FALSE, lambda = 3, weight = FALSE,
 beta = 0.1, ...)
