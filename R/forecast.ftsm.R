@@ -33,12 +33,16 @@
 #' \dontrun{
 #' # Fit functional time series model
 #' fit <- ftsm(pm_10_GR, order = 3)
-#' 
 #' # Forecast 12 periods ahead
 #' fc <- forecast(fit, h = 12, method = "ets")
-#' 
 #' # Plot forecasts
 #' plot(fc)
+#' 
+#' fit <- ftsm(pm_10_GR, order = 3, mean=FALSE); fc <- forecast(fit, h = 12, method = "ridge2f")
+#' # Forecast 12 periods ahead
+#' # Plot forecasts
+#' plot(fc)
+#' 
 #' }
 #' 
 #' @seealso \code{\link{ftsm}}, \code{\link{plot.ftsf}}
@@ -49,7 +53,7 @@
 #' 
 #' @export
 forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets.na",
-    "rwdrift", "rw", "struct", "arfima"), level = 80, jumpchoice = c("fit", "actual"), 
+    "rwdrift", "rw", "struct", "arfima", "ridge2f"), level = 80, jumpchoice = c("fit", "actual"), 
     pimethod = c("parametric", "nonparametric"), B = 100, usedata = nrow(object$coeff), 
     adjust = TRUE, model = NULL, damped = NULL, stationary = FALSE, 
     ...)
@@ -117,16 +121,14 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
             fitted[, i] <- pegelsfit$fitted
         }
     }
-    else if (method == "ets.na") {
-      
+    else if (method == "ets.na") {      
       if (is.null(model)) 
         model <- c("ANN", rep("AZN", nb - 1))
       else if (length(model) == 1) 
         model <- c("ANN", rep(model, nb -1))
       else if (length(model) == nb - 1) 
         model <- c("ANN", model)
-      else stop("Length of model does not match number of coefficients")
-      
+      else stop("Length of model does not match number of coefficients")      
       for (i in 1:nb) {
         barima <-  pegelsna(xx[, i], model = model[i])
         fitted[,i] <- fitted(barima)
@@ -265,16 +267,64 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
             }
         }
     }
+    else if(method=="ridge2f")
+    {
+        # Load required library
+        if (!requireNamespace("ahead", quietly = TRUE)) {
+            stop("Package 'ahead' is required for ridge2f method but not installed.")
+        }
+        
+        # Use ridge2f for multivariate forecasting of all coefficients
+        misc::debug_print(x)
+        ridge_fit <- ahead::ridge2f(
+            y = x,  # x is the coefficient matrix (time series of all components)
+            h = h,
+            ...     # Pass through additional arguments
+        )
+
+        # Extract forecasts and prediction intervals
+        meanfcast <- ridge_fit$mean
+        
+        # Handle prediction intervals
+        if ("upper" %in% names(ridge_fit) && "lower" %in% names(ridge_fit)) {
+            # If ridge2f provides prediction intervals directly
+            varfcast <- ((ridge_fit$upper - ridge_fit$lower) / (2 * qconf[1]))^2
+        } else {
+            # If ridge2f doesn't provide intervals, use a default approach
+            # This could be enhanced with bootstrap or other methods
+            varfcast[] <- var(ridge_fit$residuals, na.rm = TRUE)  # Simple fallback
+        }
+        
+        # Fitted values (if available from ridge2f)
+        if ("fitted" %in% names(ridge_fit)) {
+            fitted <- ridge_fit$fitted
+        } else {
+            # Calculate fitted values manually if needed
+            fitted <- x - ridge_fit$residuals
+        }
+        
+        # Store model for later use
+        fmodels <- ridge_fit  # Store the ridge model
+        misc::debug_print(ridge_fit)
+    }
     else stop("Unknown method")
-    ytsp <- tsp(object$fitted$time)
+    ytsp <- try(tsp(object$fitted$time), silent=TRUE)
+    if (inherits(ytsp, 'try-error'))
+        ytsp <- tsp(object$fitted)
     error <- ts(object$coeff - fitted, start = ytsp[1], frequency = ytsp[3])
+    misc::debug_print(object$coeff)
+    misc::debug_print(fitted)
     ferror <- onestepfcast <- object$y
     onestepfcast$y <- object$basis %*% t(fitted)
     onestepfcast$yname <- "One step forecasts"
-    colnames(onestepfcast$y) = colnames(object$y$y)
-    ferror$y <- object$y$y - onestepfcast$y
-    ferror$yname <- "One step errors"
+    misc::debug_print(onestepfcast)
+    misc::debug_print(onestepfcast$y)
+    misc::debug_print(object$y$y)
+    #colnames(onestepfcast$y) = colnames(object$y$y)
+    #ferror$y <- object$y$y - onestepfcast$y
+    #ferror$yname <- "One step errors"
     basis_obj_fore = object$basis %*% t(meanfcast)
+    misc::debug_print(basis_obj_fore)
     colnames(basis_obj_fore) = 1:h
     fmean <- fts(object$y$x, basis_obj_fore, start = ytsp[2] + 
         1/ytsp[3], frequency = ytsp[3], xname = object$y$xname, yname = "Forecasts")
@@ -284,15 +334,62 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
     vx <- rowMeans(res$y, na.rm = TRUE)
     modelvar <- object$basis^2 %*% t(varfcast)
     totalvar <- sweep(modelvar, 1, vx + object$mean.se^2, "+")
-    if (adjust & nb > 1) {
-        adj.factor <- rowMeans(ferror$y^2, na.rm = TRUE)/totalvar[, 
-            1]
-        totalvar <- sweep(totalvar, 1, adj.factor, "*")
-    }
-    else adj.factor <- 1
+    # if (adjust & nb > 1) {
+    #     #adj.factor <- rowMeans(ferror$y^2, na.rm = TRUE)/totalvar[, 
+    #     #    1]
+    #     totalvar <- sweep(totalvar, 1, adj.factor, "*")
+    # }
+    # else adj.factor <- 1
+    adj.factor <- 1
     if (length(qconf) > 1) 
         stop("Multiple confidence levels not yet implemented")
     if (pimethod == "parametric") {
+        # SPECIAL CASE of "ridge2f"
+      misc::debug_print(pimethod)
+        if (method == "ridge2f" && "upper" %in% names(fmodels) && "lower" %in% names(fmodels)) {
+            # Special case for ridge2f: use native prediction intervals if available
+            ridge_fit <- fmodels  # The stored ridge2f model        
+            # Transform ridge2f intervals back to functional space
+            flower_coeff <- ridge_fit$lower %*% t(object$basis)
+            fupper_coeff <- ridge_fit$upper %*% t(object$basis)        
+            flower <- fts(object$y$x, t(flower_coeff), start = ytsp[2] + 
+                1/ytsp[3], frequency = ytsp[3], xname = object$y$xname, yname = "Forecast lower limit")
+            fupper <- fts(object$y$x, t(fupper_coeff), start = ytsp[2] + 
+                1/ytsp[3], frequency = ytsp[3], xname = object$y$xname, yname = "Forecast upper limit")
+            colnames(flower$y) = colnames(fupper$y) = seq(ytsp[2]+1/ytsp[3], ytsp[2]+h/ytsp[3], by=1/ytsp[3])  
+            misc::debug_print(flower)
+            misc::debug_print(fupper)
+            misc::debug_print(meanfcast)
+            misc::debug_print(ytsp)
+            # Create coefficient forecasts using ridge2f intervals directly
+            coeff <- list()
+            for (i in 1:nb) {
+                coeff[[i]] <- structure(list(
+                    mean = ts(meanfcast[, i], start = ytsp[2] + 1/ytsp[3], frequency = ytsp[3]), 
+                    lower = ts(ridge_fit$lower[, i], start = ytsp[2] + 1/ytsp[3], frequency = ytsp[3]), 
+                    upper = ts(ridge_fit$upper[, i], start = ytsp[2] + 1/ytsp[3], frequency = ytsp[3]), 
+                    level = level, x = x[, i], method = method, 
+                    model = fmodels
+                ), class = "forecast")
+            }            
+            names(coeff) <- paste("Basis", 1:nb)
+            misc::debug_print(coeff)
+        return(structure(list(mean = fmean, lower = flower, upper = fupper, 
+            fitted = onestepfcast, error = ferror, coeff = coeff, 
+            coeff.error = error, var = list(model = modelvar, 
+                error = vx, mean = object$mean.se^2, total = totalvar, 
+                coeff = varfcast, adj.factor = adj.factor
+            ), model = object), 
+            class = "ftsf"))
+            names(coeff) <- paste("Basis", 1:nb)
+            return(structure(list(mean = fmean, lower = flower, upper = fupper, 
+            fitted = onestepfcast, error = ferror, coeff = coeff, 
+            coeff.error = error, var = list(model = modelvar, 
+                error = vx, mean = object$mean.se^2, total = totalvar, 
+                coeff = varfcast, adj.factor = adj.factor
+            ), model = object), 
+            class = "ftsf"))
+        } else {
         tmp <- qconf * sqrt(totalvar)
         flower <- fts(object$y$x, fmean$y - tmp, start = ytsp[2] + 
             1/ytsp[3], frequency = ytsp[3], xname = object$y$xname, yname = "Forecast lower limit")
@@ -312,11 +409,17 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
             fitted = onestepfcast, error = ferror, coeff = coeff, 
             coeff.error = error, var = list(model = modelvar, 
                 error = vx, mean = object$mean.se^2, total = totalvar, 
-                coeff = varfcast, adj.factor = adj.factor), model = object), 
-            class = "ftsf"))
+                coeff = varfcast, adj.factor = adj.factor
+            ), model = object), 
+            class = "ftsf"))}
     }
-    else {
-        junk = ftsmPI(object, B = B, level = level, h = h, fmethod = method)
+    else { # nonparametric
+        if (method == "ridge2f")
+        {
+            junk = ftsmPI(object, B = B, level = level, h = h, fmethod = method)
+        } else {
+            junk = ftsmPI2(object, B = B, level = level, h = h, ...)
+        }        
         colnames(junk$lb) = colnames(junk$ub) = seq(ytsp[2]+1/ytsp[3], ytsp[2]+h/ytsp[3], by=1/ytsp[3])
         lb = fts(object$y$x, junk$lb, start = ytsp[2] + 1/ytsp[3], frequency = ytsp[3],
             xname = object$y$xname, yname = "Forecast lower limit")
