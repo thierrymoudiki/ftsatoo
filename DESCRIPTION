@@ -1,10 +1,10 @@
 Package: ftsatoo
 Type: Package
 Title: Functional Time Series Analysis
-Version: 0.1.0
-Date: 2025-08-02
+Version: 0.2.0
+Date: 2025-08-30
 Depends: R (>= 3.5.0), forecast, rainbow, sde
-Suggests: fds, R2jags, meboot, fdadensity
+Suggests: fds, R2jags, meboot, fdadensity, ahead
 Imports: colorspace, MASS, pcaPP, fda, pdfCluster, ecp, strucchange,
         e1071, psych, fGarch, KernSmooth, vars, boot, fdapace,
         LaplacesDemon, evgam, ROOPSD, glue, methods

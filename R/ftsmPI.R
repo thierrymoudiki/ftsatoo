@@ -1,4 +1,5 @@
-ftsmPI <- function (object, B, level, h, fmethod = c("ets", "arima")) 
+ftsmPI <- function (object, B, level, h, fmethod = c("ets", "arima", "other"), 
+                    FUN=NULL, ...) 
 {
   data = object$y$y
   p = nrow(data)
@@ -14,33 +15,61 @@ ftsmPI <- function (object, B, level, h, fmethod = c("ets", "arima"))
   load = as.matrix(svd(sdata)$v[, 1:ncomp])
   sco = sdata %*% load
   olivia = matrix(, ncomp, h)
+  
+  if (fmethod == "other")
+  {
+    stopifnot(!is.null(FUN))
+    fit_obj <- lapply(ahead::genericforecast(FUN = FUN, 
+                                             y = sco[, i]), 
+                      h = h, ...)
+    for (i in 1:ncomp) {
+      olivia[i, ] = fit_obj[[i]]$mean
+    }
+    forerr = matrix(NA, (n - ncomp - h + 1), ncomp)
+    for (i in h:(n - ncomp)) {
+      k = i + (ncomp - h)
+      fore = matrix(, 1, ncomp)
+      for (j in 1:ncomp) {
+        fore[, j] = ahead::genericforecast(FUN = FUN, 
+                                           y = sco[1:k, j], 
+                                           h = h, ...)$mean[h]
+      }
+      forerr[i - h + 1, ] = sco[k + h, ] - fore
+    }
+  }
+  
   if (fmethod == "ets") {
     for (i in 1:ncomp) {
       olivia[i, ] = forecast(ets(sco[, i]), h = h)$mean
     }
   }
+  
   if (fmethod == "arima") {
     for (i in 1:ncomp) {
       olivia[i, ] = forecast(auto.arima(sco[, i]), h = h)$mean
     }
   }
-  forerr = matrix(NA, (n - ncomp - h + 1), ncomp)
-  for (i in h:(n - ncomp)) {
-    k = i + (ncomp - h)
-    fore = matrix(, 1, ncomp)
-    if (fmethod == "ets") {
-      for (j in 1:ncomp) {
-        fore[, j] = forecast(ets(sco[1:k, j]), h = h)$mean[h]
+  
+  if (fmethod %in% c("ets", "arima")){
+    forerr = matrix(NA, (n - ncomp - h + 1), ncomp)
+    for (i in h:(n - ncomp)) {
+      k = i + (ncomp - h)
+      fore = matrix(, 1, ncomp)
+      if (fmethod == "ets") {
+        for (j in 1:ncomp) {
+          fore[, j] = forecast(ets(sco[1:k, j]), h = h)$mean[h]
+        }
       }
-    }
-    if (fmethod == "arima") {
-      for (j in 1:ncomp) {
-        fore[, j] = forecast(auto.arima(sco[1:k, j]), 
-                             h = h)$mean[h]
+      if (fmethod == "arima") {
+        for (j in 1:ncomp) {
+          fore[, j] = forecast(auto.arima(sco[1:k, j]), 
+                               h = h)$mean[h]
+        }
       }
+      forerr[i - h + 1, ] = sco[k + h, ] - fore
     }
-    forerr[i - h + 1, ] = sco[k + h, ] - fore
   }
+  
   resi = t(sdata) - load %*% t(sco)
   q = array(NA, dim = c(p, B, h))
   for (j in 1:h) {
