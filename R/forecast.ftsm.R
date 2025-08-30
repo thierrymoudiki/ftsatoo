@@ -10,6 +10,7 @@
 #'   \code{"ar"} (autoregressive), \code{"ets.na"} (ETS with NA handling),
 #'   \code{"rwdrift"} (random walk with drift), \code{"rw"} (random walk),
 #'   \code{"struct"} (structural model), \code{"arfima"} (ARFIMA model).
+#'   For more options, use argument \code{FUN}. 
 #' @param level Confidence level for prediction intervals.
 #' @param jumpchoice Method for handling the jump choice: \code{"fit"} (use fitted values)
 #'   or \code{"actual"} (use actual values).
