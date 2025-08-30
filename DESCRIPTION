@@ -15,10 +15,10 @@ ByteCompile: TRUE
 Authors@R: c(
 	person("Rob", "Hyndman", role="aut", comment = c(ORCID = "0000-0002-2140-5352")),
 	person("Han Lin", "Shang", email="hanlin.shang@mq.edu.au", role=c("aut", "cre", "cph"), comment = c(ORCID = "0000-0003-1769-6430")),
-  person("T.", "Moudiki", email="thierry.moudiki@gmail.com", role="ctb")
+  person("T.", "Moudiki", email="thierry.moudiki@gmail.com", role=c("aut", "ctb"))
 	)
 Maintainer: T. Moudiki <thierry.moudiki@gmail.com>
-Description: Functions for visualizing, modeling, forecasting and hypothesis testing of functional time series.
+Description: Functions for visualizing, modeling, (generic) forecasting and hypothesis testing of functional time series.
 License: GPL-3
 NeedsCompilation: no
 RoxygenNote: 7.3.2
