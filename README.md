@@ -20,8 +20,20 @@ plot(fit_obj)
                     pimethod = "nonparametric",
                     FUN=forecast::thetaf))   
 plot(fcast)                    
+
 (fcast <- forecast(object = fit_obj, h = 12, level=95, 
                     pimethod = "nonparametric",
                     FUN=ahead::dynrmf))     
 plot(fcast)                                      
+
+# And here too (multivariate)
+(fcast <- forecast(object = fit_obj, h = 12, level=95, 
+                    pimethod = "nonparametric",
+                    FUN=ahead::ridge2f))     
+plot(fcast)                                 
+
+(fcast <- forecast(object = fit_obj, h = 12, level=95, 
+                    pimethod = "nonparametric",
+                    FUN=ahead::varf))     
+plot(fcast)                                 
 ```
