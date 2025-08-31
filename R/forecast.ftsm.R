@@ -120,28 +120,50 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
   
   if(!is.null(FUN))
   {
-    for(i in 1:nb)
-    {
-      if(var(xx[,i],na.rm=TRUE) < 1e-8)
+    # multivariate forecasting case
+    fit_obj <- try(FUN(xx, h=h, level=level, ...), 
+                   silent=TRUE)
+    if (!inherits(fit_obj, "try-error"))
+    { # multivariate forecasting case
+      fitted <- try(fit_obj$fitted, silent=TRUE)
+      if (inherits(fitted, "try-error"))
+        fitted <- NULL 
+      pred <- fit_obj 
+      fmodels <- pred 
+      meanfcast <- pred$mean
+      varfcast <- ((pred$upper-pred$lower)/(2*qconf[1]))^2 
+    }
+    else {
+      # univariate forecasting case 
+      for(i in 1:nb)
       {
-        cc <- mean(xx[,i],na.rm=TRUE)
-        fmodels[[i]] <- list("Constant",cc)
-        meanfcast[,i] <- rep(cc,h)
-        varfcast[,i] <- rep(0,h)
-        fitted[,i] <- rep(cc,length(xx[,i]))
-      }
-      else
-      {
-        fit_obj <- ahead::genericforecast(FUN=FUN, y=xx[,i], 
-                                       h=h, level=level, 
-                                       ...)
-        fitted[,i] <- fitted(fit_obj)
-        pred <- fit_obj
-        fmodels[[i]] <- pred
-        meanfcast[,i] <- pred$mean
-        varfcast[,i] <- ((pred$upper-pred$lower)/(2*qconf[1]))^2
+        if(var(xx[,i],na.rm=TRUE) < 1e-8)
+        {
+          cc <- mean(xx[,i],na.rm=TRUE)
+          fmodels[[i]] <- list("Constant",cc)
+          meanfcast[,i] <- rep(cc,h)
+          varfcast[,i] <- rep(0,h)
+          fitted[,i] <- rep(cc,length(xx[,i]))
+        }
+        else
+        {
+          fit_obj <- try(ahead::genericforecast(FUN=FUN, y=xx[,i], 
+                                                h=h, level=level, 
+                                                ...), silent=TRUE)
+          if (!inherits(fit_obj, "try-error"))
+          {
+            fitted[,i] <- fitted(fit_obj)
+            pred <- fit_obj
+            fmodels[[i]] <- pred
+            meanfcast[,i] <- pred$mean
+            varfcast[,i] <- ((pred$upper-pred$lower)/(2*qconf[1]))^2 
+          } else {
+            stop(paste("ahead::genericforecast failed to fit series", i))
+          }
+        }
       }
     }
+
   } else {
     if (method == "ets") {
       if (is.null(model)) 
@@ -371,12 +393,18 @@ forecast.ftsm <- function (object, h = 10, method = c("ets", "arima", "ar", "ets
                      class = "ftsf"))
   }
   else {
-    if (is.null(FUN))
+    if (is.null(FUN)) # default forecasting models 
     {
       junk = ftsmPI(object, B = B, level = level, h = h, fmethod = method) 
-    } else {
-      junk = ftsmPI(object, B = B, level = level, h = h, fmethod = "other", 
-                    FUN=FUN, ...) 
+    } else { # custom and multivariate 
+      junk = try(ftsmPI(object, B = B, level = level, h = h, 
+                        fmethod = "other", 
+                    FUN=FUN, ...), silent=TRUE)
+      if (inherits(junk, "try-error")) # multivariate case 
+      {
+        junk = try(ftsmPI2(object, B = B, level = level, h = h,
+                          FUN=FUN, ...), silent=TRUE)
+      }
     }
     colnames(junk$lb) = colnames(junk$ub) = seq(ytsp[2]+1/ytsp[3], ytsp[2]+h/ytsp[3], by=1/ytsp[3])
     lb = fts(object$y$x, junk$lb, start = ytsp[2] + 1/ytsp[3], frequency = ytsp[3],
